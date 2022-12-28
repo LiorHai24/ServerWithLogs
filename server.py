@@ -7,7 +7,7 @@ import datetime
 
 
 app = Flask(__name__)
-request_count = 1
+request_count = 0
 format = logging.Formatter("%(asctime)s.%(msecs)03d %(levelname)s: %(message)s | request #%(request_count)s","%d-%m-%Y %H:%M:%S")
 
 request_logger_name = 'request-logger'
@@ -43,6 +43,7 @@ stack = collections.deque()
 @app.route('/logs/level', methods = ['GET'])
 def Get_Log_Level():
     global request_count
+    request_count += 1
     flag = False
     request_logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
     begin = datetime.datetime.now()
@@ -57,26 +58,27 @@ def Get_Log_Level():
         res = Independent_logger.level
     else:
         answer = "Error! The logger name does not exist!"
-        json_res = bad_res(answer)
+        app_res = app.response_class(response = answer)
         flag = True
 
     if flag == False:
-        json_res = good_res(logging.getLevelName(res))
+        app_res = app.response_class(response = logging.getLevelName(res))
     
     end = datetime.datetime.now()
-    request_logger.debug("request #{} duration: {}ms".format(request_count, (end - begin).microseconds), extra={"request_count": request_count})
-    request_count+= 1
-    return json_res
+    request_logger.debug("request #{} duration: {}ms".format(request_count, ((end - begin).microseconds)//1000), extra={"request_count": request_count})
+    return app_res
 
 @app.route('/logs/level', methods = ['PUT'])
 def Set_Log_Level():
     global request_count
+    request_count+= 1
     flag = False
     request_logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'PUT'), extra={"request_count": request_count})
     begin = datetime.datetime.now()
     dic = request.args.to_dict()
     logger_name = dic['logger-name']
     logger_level = dic['logger-level']
+    logger_level = logger_level.upper()
     if logger_level in ["ERROR","INFO","DEBUG"]:
         if logger_name == stack_logger_name:
             stack_logger.setLevel(logger_level)
@@ -86,18 +88,17 @@ def Set_Log_Level():
             Independent_logger.setLevel(logger_level)
         else:
             answer = "Error! The logger name does not exist!"
-            json_res = bad_res(answer)
+            app_res = app.response_class(response = answer)
             flag = True
     else:
         answer = "Error! The logger level does not match the options available!"
-        json_res = bad_res(answer)
+        app_res = app.response_class(response = answer)
         flag = True
     if flag == False:
-        json_res = good_res(logger_level)
+        app_res = app.response_class(response = logger_level)
     end = datetime.datetime.now()
-    request_logger.debug("request #{} duration: {}ms".format(request_count, (end - begin).microseconds), extra={"request_count": request_count})
-    request_count+= 1
-    return json_res
+    request_logger.debug("request #{} duration: {}ms".format(request_count, ((end - begin).microseconds)//1000), extra={"request_count": request_count})
+    return app_res
 
 
 
@@ -105,6 +106,7 @@ def Set_Log_Level():
 @app.route('/independent/calculate', methods = ['POST'])
 def calculate():
     global request_count
+    request_count+= 1
     begin = datetime.datetime.now()
     request_logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/independent/calculate', 'POST'), extra={"request_count": request_count})
     dic = json.loads(request.data)
@@ -112,7 +114,7 @@ def calculate():
     operation = dic["operation"]
     operation = operation.lower()
     answer = checkValid(argument, operation)
-
+    
     if type(answer) == str:
         Independent_logger.error("Server encountered an error ! message: {}".format(answer), extra={"request_count": request_count})
         result = bad_res(answer)
@@ -121,8 +123,7 @@ def calculate():
         Independent_logger.debug("Performing operation: {}({},{}) = {}".format(operation, argument[0], argument[1], answer), extra={"request_count": request_count})
         result = good_res(answer)
     end = datetime.datetime.now()
-    request_logger.debug("request #{} duration: {}ms".format(request_count, (end - begin).microseconds), extra={"request_count": request_count})
-    request_count+= 1
+    request_logger.debug("request #{} duration: {}ms".format(request_count,((end - begin).microseconds)//1000), extra={"request_count": request_count})
     return result
 
     
@@ -157,7 +158,6 @@ def good_res(good):
 def bad_res(bad):
     AnsJson = json.dumps({'result': '', 'error-message': bad})
     response = app.response_class(
-
         response = AnsJson,
         status = 409,
         mimetype = 'application/json')
@@ -167,6 +167,7 @@ def bad_res(bad):
 @app.route('/stack/size', methods = ['GET'])
 def size():
     global request_count
+    request_count+= 1
     begin = datetime.datetime.now()
     request_logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/stack/size', 'GET'), extra={"request_count": request_count})
     stack_logger.info("Stack size is {}".format(len(stack)), extra={"request_count": request_count})
@@ -182,15 +183,15 @@ def size():
     res += ']'
 
     end = datetime.datetime.now()
-    request_logger.debug("request #{} duration: {}ms".format(request_count, (end - begin).microseconds), extra={"request_count": request_count})
+    request_logger.debug("request #{} duration: {}ms".format(request_count, ((end - begin).microseconds)//1000), extra={"request_count": request_count})
     stack_logger.debug(res, extra={"request_count": request_count})
-    request_count+= 1
     return result
 
 
 @app.route('/stack/arguments', methods = ['PUT'])
 def AddArgument():
     global request_count
+    request_count+= 1
     begin = datetime.datetime.now()
     request_logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/stack/arguments', 'PUT'), extra={"request_count": request_count})
     before_addition = len(stack)
@@ -214,14 +215,14 @@ def AddArgument():
     end = datetime.datetime.now()
     print(begin)
     print(end)
-    request_logger.debug("request #{} duration: {}ms".format(request_count,(end - begin).microseconds), extra={"request_count": request_count})
-    request_count+= 1
+    request_logger.debug("request #{} duration: {}ms".format(request_count,((end - begin).microseconds)//1000), extra={"request_count": request_count})
     return result
 
 
 @app.route('/stack/operate', methods = ['GET'])
 def Operate():
     global request_count
+    request_count+= 1
     begin = datetime.datetime.now()
     request_logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/stack/operate', 'GET'), extra={"request_count": request_count})
 
@@ -264,8 +265,7 @@ def Operate():
     if type(answer) == str:
         stack_logger.error("Server encountered an error ! message: {}".format(answer), extra={"request_count": request_count})
     end = datetime.datetime.now()
-    request_logger.debug("request #{} duration: {}ms".format(request_count, (end - begin).microseconds), extra={"request_count": request_count})
-    request_count+= 1
+    request_logger.debug("request #{} duration: {}ms".format(request_count, ((end - begin).microseconds)//1000), extra={"request_count": request_count})
     return result
 
 
@@ -273,6 +273,7 @@ def Operate():
 @app.route('/stack/arguments', methods = ['DELETE'])
 def Delete_From_Stack():
     global request_count
+    request_count+= 1
     begin = datetime.datetime.now()
     request_logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/stack/arguments', 'DELETE'), extra={"request_count": request_count})
     answer = ""#empty string
@@ -291,8 +292,7 @@ def Delete_From_Stack():
     if type(answer) == str:
         stack_logger.error("Server encountered an error ! message: {}".format(answer), extra={"request_count": request_count})
     end = datetime.datetime.now()
-    request_logger.debug("request #{} duration: {}ms".format(request_count, (end - begin).microseconds), extra={"request_count": request_count})
-    request_count+= 1
+    request_logger.debug("request #{} duration: {}ms".format(request_count,((end - begin).microseconds)//1000), extra={"request_count": request_count})
     return result
     
 
