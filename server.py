@@ -338,7 +338,7 @@ def Fact(x):
 if __name__ == "__main__":  
     app.run(port=9583)
 
-#query = comes with the url and is written at the end
+#query = comes with the url and is written at the end of the url
 #to get it out: request.args.to_dict()
 #body = dictionary that come seperated (assuming it is json type)
 #to get it out: dic = json.loads(request.data)
