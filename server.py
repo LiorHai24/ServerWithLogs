@@ -4,9 +4,13 @@ import collections
 import logging
 import sys
 import datetime
-
+import os
 
 app = Flask(__name__)
+
+if not os.path.exists('logs'):#creation of logs folder
+    os.makedirs('logs')
+
 request_count = 0
 format = logging.Formatter("%(asctime)s.%(msecs)03d %(levelname)s: %(message)s | request #%(request_count)s","%d-%m-%Y %H:%M:%S")
 
@@ -14,7 +18,7 @@ request_logger_name = 'request-logger'
 request_logger = logging.getLogger(request_logger_name)
 request_logger.propagate = True
 request_logger.setLevel(logging.INFO)
-request_file = logging.FileHandler('logs\\requests.log', mode='w')
+request_file = logging.FileHandler('logs\\requests.log', mode='w')#creation of requests log file
 request_file.setFormatter(format)
 request_logger.addHandler(request_file)
 handler = logging.StreamHandler(sys.stdout)
@@ -25,7 +29,7 @@ stack_logger_name = 'stack-logger'
 stack_logger = logging.getLogger(stack_logger_name)
 stack_logger.propagate = True
 stack_logger.setLevel(logging.INFO)
-stack_file = logging.FileHandler('logs\\stack.log', mode='w')
+stack_file = logging.FileHandler('logs\\stack.log', mode='w')#creation of stack log file
 stack_file.setFormatter(format)
 stack_logger.addHandler(stack_file)
 
@@ -33,7 +37,7 @@ independent_logger_name = 'independent-logger'
 Independent_logger = logging.getLogger(independent_logger_name)
 Independent_logger.propagate = True
 Independent_logger.setLevel(logging.DEBUG)
-Independent_file = logging.FileHandler('logs\\independent.log', mode='w')
+Independent_file = logging.FileHandler('logs\\independent.log', mode='w')#creation of independent log file
 Independent_file.setFormatter(format)
 Independent_logger.addHandler(Independent_file)
 
